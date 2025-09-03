@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteo Veneto</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn.primary {
+            background: #00b894;
+            color: white;
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .weather-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .city-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2d3436;
+        }
+
+        .current-weather {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .temperature {
+            font-size: 3em;
+            font-weight: bold;
+            color: #74b9ff;
+            margin-right: 20px;
+        }
+
+        .weather-info {
+            flex: 1;
+        }
+
+        .description {
+            font-size: 1.2em;
+            color: #636e72;
+            text-transform: capitalize;
+            margin-bottom: 5px;
+        }
+
+        .feels-like {
+            color: #636e72;
+            font-size: 0.9em;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .detail-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        .forecast {
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .forecast-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2d3436;
+        }
+
+        .forecast-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f2f6;
+        }
+
+        .forecast-item:last-child {
+            border-bottom: none;
+        }
+
+        .forecast-date {
+            font-weight: bold;
+            color: #636e72;
+        }
+
+        .forecast-temps {
+            color: #74b9ff;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            margin: 40px 0;
+        }
+
+        .error {
+            background: #d63031;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .weather-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌤️ Meteo Veneto</h1>
+            <p>Previsioni meteorologiche in tempo reale</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn primary" onclick="loadAllCities()">Tutte le Città</button>
+            <select id="citySelect" onchange="loadSingleCity(this.value)">
+                <option value="">Seleziona una città</option>
+                <option value="Venezia">Venezia</option>
+                <option value="Verona">Verona</option>
+                <option value="Padova">Padova</option>
+                <option value="Vicenza">Vicenza</option>
+                <option value="Treviso">Treviso</option>
+                <option value="Rovigo">Rovigo</option>
+                <option value="Belluno">Belluno</option>
+            </select>
+            <button class="btn" onclick="refreshData()">🔄 Aggiorna</button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Caricamento dati meteo...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="weatherContainer" class="weather-grid"></div>
+    </div>
+
+    <script>
+        const API_KEY = '1114aa33423b17900d48b4962229ee34';
+        const CURRENT_WEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather';
+        const FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
+
+        const venetoCities = {
+            'Venezia': { lat: 45.4408, lon: 12.3155 },
+            'Verona': { lat: 45.4384, lon: 10.9916 },
+            'Padova': { lat: 45.4064, lon: 11.8768 },
+            'Vicenza': { lat: 45.5477, lon: 11.5448 },
+            'Treviso': { lat: 45.6669, lon: 12.2433 },
+            'Rovigo': { lat: 45.0712, lon: 11.7904 },
+            'Belluno': { lat: 46.1432, lon: 12.2136 }
+        };
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('weatherContainer').innerHTML = '';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+            hideLoading();
+        }
+
+        async function getWeatherData(lat, lon, cityName) {
+            try {
+                const [currentResponse, forecastResponse] = await Promise.all([
+                    fetch(`${CURRENT_WEATHER_URL}?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=it`),
+                    fetch(`${FORECAST_URL}?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=it`)
+                ]);
+
+                if (!currentResponse.ok || !forecastResponse.ok) {
+                    throw new Error(`Errore HTTP: ${currentResponse.status}`);
+                }
+
+                const currentWeather = await currentResponse.json();
+                const forecast = await forecastResponse.json();
+
+                return { current: currentWeather, forecast: forecast, cityName: cityName };
+            } catch (error) {
+                throw new Error(`Errore nel recuperare i dati per ${cityName}: ${error.message}`);
+            }
+        }
+
+        function createWeatherCard(data) {
+            const { current, forecast, cityName } = data;
+            
+            // Process forecast data
+            const dailyForecasts = {};
+            forecast.list.forEach(item => {
+                const date = new Date(item.dt * 1000).toLocaleDateString('it-IT');
+                if (!dailyForecasts[date]) {
+                    dailyForecasts[date] = {
+                        temps: [],
+                        conditions: item.weather[0].description,
+                        date: date
+                    };
+                }
+                dailyForecasts[date].temps.push(item.main.temp);
+            });
+
+            const forecastItems = Object.values(dailyForecasts).slice(0, 5).map(day => {
+                const minTemp = Math.min(...day.temps);
+                const maxTemp = Math.max(...day.temps);
+                return `
+                    <div class="forecast-item">
+                        <span class="forecast-date">${day.date}</span>
+                        <span class="forecast-temps">${minTemp.toFixed(1)}° - ${maxTemp.toFixed(1)}°</span>
+                        <span>${day.conditions}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="weather-card">
+                    <div class="city-name">${cityName}</div>
+                    <div class="current-weather">
+                        <div class="temperature">${Math.round(current.main.temp)}°</div>
+                        <div class="weather-info">
+                            <div class="description">${current.weather[0].description}</div>
+                            <div class="feels-like">Percepita: ${Math.round(current.main.feels_like)}°</div>
+                        </div>
+                    </div>
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <span class="detail-icon">💧</span>
+                            <span>Umidità: ${current.main.humidity}%</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-icon">💨</span>
+                            <span>Vento: ${current.wind.speed} m/s</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-icon">📊</span>
+                            <span>Pressione: ${current.main.pressure} hPa</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-icon">👁️</span>
+                            <span>Visibilità: ${(current.visibility / 1000).toFixed(1)} km</span>
+                        </div>
+                    </div>
+                    <div class="forecast">
+                        <div class="forecast-title">Prossimi giorni:</div>
+                        ${forecastItems}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAllCities() {
+            showLoading();
+            const container = document.getElementById('weatherContainer');
+            
+            try {
+                const promises = Object.entries(venetoCities).map(([cityName, coords]) =>
+                    getWeatherData(coords.lat, coords.lon, cityName)
+                );
+                
+                const results = await Promise.all(promises);
+                
+                container.innerHTML = results.map(createWeatherCard).join('');
+                hideLoading();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function loadSingleCity(cityName) {
+            if (!cityName) return;
+            
+            showLoading();
+            const container = document.getElementById('weatherContainer');
+            const coords = venetoCities[cityName];
+            
+            try {
+                const data = await getWeatherData(coords.lat, coords.lon, cityName);
+                container.innerHTML = createWeatherCard(data);
+                hideLoading();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function refreshData() {
+            const selectValue = document.getElementById('citySelect').value;
+            if (selectValue) {
+                loadSingleCity(selectValue);
+            } else {
+                loadAllCities();
+            }
+        }
+
+        // Load all cities on page load
+        window.addEventListener('load', () => {
+            loadAllCities();
+        });
+    </script>
+</body>
+</html>
