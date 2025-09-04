@@ -3,7 +3,13 @@
     "allow": [
       "WebFetch(domain:openweathermap.org)",
       "Bash(node:*)",
-      "Bash(dir)"
+      "Bash(dir)",
+      "Read(/Users/marcosalmaso/Library/Application Support/Claude/**)",
+      "Bash(claude config --help)",
+      "Bash(claude config list:*)",
+      "Bash(claude mcp:*)",
+      "Read(/Users/marcosalmaso/Documents/**)",
+      "Read(//Users/marcosalmaso/Library/Application Support/Claude/**)"
     ],
     "deny": [],
     "ask": []
